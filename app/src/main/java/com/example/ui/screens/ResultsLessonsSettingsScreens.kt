@@ -1,4 +1,4 @@
-﻿package com.example.ui.screens
+package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -196,7 +196,7 @@ fun ResultsScreen(
                                     color = palette.onLavenderWash
                                 )
                                 Text(
-                                    text = "${promoted.koriPersonaTitle()} â€¢ ${promoted.displayName}",
+                                    text = "${promoted.koriPersonaTitle()} • ${promoted.displayName}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.onLavenderWash
@@ -279,7 +279,7 @@ fun ResultsScreen(
                             Spacer(modifier = Modifier.height(6.dp))
                             score.improvements.forEach { item ->
                                 Text(
-                                    text = "â€¢ $item",
+                                    text = "• $item",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = palette.onCoralWash,
                                     modifier = Modifier.padding(vertical = 3.dp)
@@ -326,7 +326,7 @@ fun ResultsScreen(
                                         color = palette.inkSecondary
                                     )
                                     Text(
-                                        text = "â€œ${score.rewriteIt.original}â€",
+                                        text = "“${score.rewriteIt.original}”",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontStyle = FontStyle.Italic,
                                         color = palette.inkPrimary
@@ -356,7 +356,7 @@ fun ResultsScreen(
                                         color = palette.sageAccent
                                     )
                                     Text(
-                                        text = "â€œ${score.rewriteIt.improved}â€",
+                                        text = "“${score.rewriteIt.improved}”",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = palette.inkPrimary
@@ -437,7 +437,7 @@ fun ResultsScreen(
 
                             score.strengths.forEach { item ->
                                 Text(
-                                    text = "âœ“ $item",
+                                    text = "✓ $item",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.inkPrimary,
                                     modifier = Modifier.padding(vertical = 2.dp)
@@ -624,7 +624,7 @@ fun HistoryScreen(
                         color = palette.inkPrimary
                     )
                     Text(
-                        text = "${debateHistory.size} saved Room sessions â€¢ Tap any debate to review transcript & AI analysis",
+                        text = "${debateHistory.size} saved Room sessions • Tap any debate to review transcript & AI analysis",
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.inkSecondary
                     )
@@ -649,7 +649,7 @@ fun HistoryScreen(
                 ) {
                     HistoryStatColumn(
                         label = "Active Streak",
-                        value = "${userPrefs.streakDays}d ðŸ”¥",
+                        value = "${userPrefs.streakDays}d 🔥",
                         accent = palette.coralAccent
                     )
                     HistoryStatColumn(
@@ -748,7 +748,7 @@ fun HistoryScreen(
                                     )
                                 }
                                 Text(
-                                    text = "${session.dateKey} â€¢ ${parsedTurns.size} turns",
+                                    text = "${session.dateKey} • ${parsedTurns.size} turns",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.inkSecondary
                                 )
@@ -837,6 +837,8 @@ private fun HistoryStatColumn(
 @Composable
 fun SettingsScreen(
     userPrefs: UserProgressPreferences,
+    dailyUsageInfo: Pair<Int, Int> = Pair(0, 10),
+    isQuotaLocked: Boolean = false,
     onSelectThemeMode: (ThemeMode) -> Unit = {},
     onSaveApiKey: (String) -> Unit = {},
     onResetProgress: () -> Unit,
@@ -1044,7 +1046,7 @@ fun SettingsScreen(
                                 )
                                 Column {
                                     Text(
-                                        text = "${rank.koriPersonaTitle()} â€¢ ${rank.displayName}",
+                                        text = "${rank.koriPersonaTitle()} • ${rank.displayName}",
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isCurrent) palette.onSageWash else palette.inkPrimary
@@ -1064,7 +1066,7 @@ fun SettingsScreen(
                                 text = when {
                                     isCurrent -> "Current"
                                     isUnlocked -> "Unlocked"
-                                    else -> "Score â‰¥${rank.qualifyingScoreThreshold()}"
+                                    else -> "Score ≥${rank.qualifyingScoreThreshold()}"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -1106,20 +1108,20 @@ fun SettingsScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = if (userPrefs.geminiApiKey.isNotBlank()) "✨" else "🏯",
+                                    text = if (userPrefs.geminiApiKey.isNotBlank()) "✨" else "🔒",
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             }
                         }
                         Column {
                             Text(
-                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Live Gemini AI Active" else "Storybook Sparring Engine Active",
+                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Personal Gemini API Key Active" else if (isQuotaLocked) "Free Tier Daily Limit Reached" else "Gemini 3.8 Flash (Free Tier Locked)",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.inkPrimary
                             )
                             Text(
-                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Using your custom Google AI Studio Gemini API key." else "Zero setup required. Using built-in East African sparring motions and Mwalimu Kori adjudication.",
+                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Unlimited live AI debates with Gemini 3.8 Flash using your own Google AI Studio key." else if (isQuotaLocked) "Daily shared quota reached (${dailyUsageInfo.first}/${dailyUsageInfo.second} turns). Add your free key below for unlimited turns, or continue with the built-in sparring engine." else "Free-tier protected (${dailyUsageInfo.first}/${dailyUsageInfo.second} daily turns used). Locked to prevent charges.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.inkSecondary
                             )

@@ -19,7 +19,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +69,7 @@ fun HojaApp(viewModel: HojaViewModel = viewModel()) {
     val dailyMotionState by viewModel.dailyMotionState.collectAsStateWithLifecycle()
     val debateState by viewModel.debateState.collectAsStateWithLifecycle()
     val debateHistory by viewModel.debateHistory.collectAsStateWithLifecycle()
+    val showQuotaDialog by viewModel.showQuotaDialog.collectAsStateWithLifecycle()
 
     val systemDark = isSystemInDarkTheme()
     val isDark = when (userPrefs.themeMode) {
@@ -203,6 +210,8 @@ fun HojaApp(viewModel: HojaViewModel = viewModel()) {
                                 HojaScreen.SETTINGS -> {
                                     SettingsScreen(
                                         userPrefs = userPrefs,
+                                        dailyUsageInfo = viewModel.getDailyUsageInfo(),
+                                        isQuotaLocked = viewModel.isSharedQuotaLocked(),
                                         onSelectThemeMode = { viewModel.setThemeMode(it) },
                                         onSaveApiKey = { viewModel.saveGeminiApiKey(it) },
                                         onResetProgress = { viewModel.resetAllProgress() },

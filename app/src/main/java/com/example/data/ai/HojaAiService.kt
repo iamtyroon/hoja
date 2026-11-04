@@ -2,6 +2,7 @@ package com.example.data.ai
 
 import android.content.Context
 import android.util.Log
+import com.example.BuildConfig
 import com.example.data.model.DailyMotion
 import com.example.data.model.DebateLevel
 import com.example.data.model.DebateRound
@@ -11,8 +12,8 @@ import com.example.data.model.DebateTurnMessage
 import com.example.data.model.KeyTerm
 import com.example.data.model.RewriteItFeedback
 import com.example.data.model.TurnSpeaker
-import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,20 +21,47 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 private const val TAG = "HojaAiService"
-private const val GEMINI_MODEL = "gemini-2.5-flash"
+private const val PRIMARY_MODEL = "gemini-3.8-flash"
+private const val FALLBACK_MODEL = "gemini-2.5-flash"
 
 data class OpponentTurnResponse(
     val opponentReply: String,
     val exampleStrongAnswer: String
 )
 
-class HojaAiService(private val context: Context? = null) {
+class HojaAiService(
+    private val context: Context? = null,
+    var onQuotaExceeded: (() -> Unit)? = null
+) {
+    private val rateLimiter = context?.let { GeminiRateLimiter(it) }
 
-    private fun getEffectiveApiKey(): String {
-        return context?.getSharedPreferences("hoja_local_prefs", Context.MODE_PRIVATE)
+    fun getDailyUsageInfo(): Pair<Int, Int> = rateLimiter?.getDailyUsageInfo() ?: Pair(0, GeminiRateLimiter.SHARED_DAILY_CAP)
+
+    fun isSharedQuotaLocked(): Boolean = rateLimiter?.isSharedQuotaLocked() ?: false
+
+    private fun getEffectiveKeyInfo(): Pair<String, Boolean> {
+        val userKey = context?.getSharedPreferences("hoja_local_prefs", Context.MODE_PRIVATE)
             ?.getString("gemini_api_key", "")
             ?.trim()
             .orEmpty()
+        if (userKey.isNotBlank()) {
+            return Pair(userKey, true) // Debater's personal key
+        }
+
+        // Check if a default/bundled key is configured in BuildConfig
+        val defaultKey = runCatching {
+            val field = BuildConfig::class.java.getField("DEFAULT_GEMINI_API_KEY")
+            field.get(null) as? String
+        }.getOrNull() ?: runCatching {
+            val field = BuildConfig::class.java.getField("GEMINI_API_KEY")
+            field.get(null) as? String
+        }.getOrNull() ?: ""
+
+        if (defaultKey.isNotBlank()) {
+            return Pair(defaultKey, false) // Shared developer key (locked to free tier)
+        }
+
+        return Pair("", false)
     }
 
     suspend fun generateDailyMotion(
@@ -41,8 +69,21 @@ class HojaAiService(private val context: Context? = null) {
         level: DebateLevel,
         avoidMotions: List<String> = emptyList()
     ): DailyMotion {
-        val apiKey = getEffectiveApiKey()
+        val (apiKey, isCustomKey) = getEffectiveKeyInfo()
         if (apiKey.isNotBlank()) {
+            val rateCheck = rateLimiter?.checkCanRequest(isCustomKey) ?: RateLimitCheckResult.Allowed
+            when (rateCheck) {
+                is RateLimitCheckResult.DailyLimitReached, RateLimitCheckResult.QuotaExhaustedToday -> {
+                    Log.w(TAG, "Daily free-tier quota reached for shared key. Requesting user key.")
+                    onQuotaExceeded?.invoke()
+                    return CuratedDebateEngine.getDailyMotion(dateKey, level, avoidMotions)
+                }
+                is RateLimitCheckResult.RapidRequestCooldown -> {
+                    delay(rateCheck.waitSeconds * 1000L)
+                }
+                RateLimitCheckResult.Allowed -> Unit
+            }
+
             try {
                 val prompt = buildString {
                     append("Date: $dateKey. Rank: ${level.displayName} (${level.description}). ")
@@ -60,11 +101,12 @@ class HojaAiService(private val context: Context? = null) {
                         "Return JSON with keys: motion (string), short_context (string), key_terms (array of objects with term and definition), " +
                         "propose_hint (string), oppose_hint (string)."
 
-                val responseText = callGeminiRest(
+                val responseText = callGeminiRestWithFallback(
                     apiKey = apiKey,
                     prompt = prompt,
                     systemInstruction = systemInstruction,
-                    temperature = 0.85f
+                    temperature = 0.85f,
+                    isCustomKey = isCustomKey
                 )
 
                 val json = JSONObject(responseText)
@@ -85,6 +127,8 @@ class HojaAiService(private val context: Context? = null) {
                         }
                     }
                 }
+
+                rateLimiter?.recordSuccess(isCustomKey)
 
                 return DailyMotion(
                     dateKey = dateKey,
@@ -111,8 +155,21 @@ class HojaAiService(private val context: Context? = null) {
         round: DebateRound,
         transcriptSoFar: List<DebateTurnMessage>
     ): OpponentTurnResponse {
-        val apiKey = getEffectiveApiKey()
+        val (apiKey, isCustomKey) = getEffectiveKeyInfo()
         if (apiKey.isNotBlank()) {
+            val rateCheck = rateLimiter?.checkCanRequest(isCustomKey) ?: RateLimitCheckResult.Allowed
+            when (rateCheck) {
+                is RateLimitCheckResult.DailyLimitReached, RateLimitCheckResult.QuotaExhaustedToday -> {
+                    Log.w(TAG, "Daily free-tier quota reached for shared key. Requesting user key.")
+                    onQuotaExceeded?.invoke()
+                    return CuratedDebateEngine.generateOpponentTurn(motion, aiSide, level, round, transcriptSoFar)
+                }
+                is RateLimitCheckResult.RapidRequestCooldown -> {
+                    delay(rateCheck.waitSeconds * 1000L)
+                }
+                RateLimitCheckResult.Allowed -> Unit
+            }
+
             try {
                 val transcriptFormatted = transcriptSoFar.joinToString("\n\n") { turn ->
                     val who = if (turn.speaker == TurnSpeaker.USER) "User (${turn.side.label})" else "AI (${turn.side.label})"
@@ -130,16 +187,19 @@ class HojaAiService(private val context: Context? = null) {
                         "opponent_reply (string with your direct debate speech) and " +
                         "example_strong_answer (1-2 sentences showing how the user can counter your point)."
 
-                val responseText = callGeminiRest(
+                val responseText = callGeminiRestWithFallback(
                     apiKey = apiKey,
                     prompt = prompt,
                     systemInstruction = systemInstruction,
-                    temperature = 0.7f
+                    temperature = 0.7f,
+                    isCustomKey = isCustomKey
                 )
 
                 val json = JSONObject(responseText)
                 val reply = json.optString("opponent_reply").takeIf { it.isNotBlank() }
                     ?: throw IllegalStateException("Opponent returned an empty reply.")
+
+                rateLimiter?.recordSuccess(isCustomKey)
 
                 return OpponentTurnResponse(
                     opponentReply = reply,
@@ -160,8 +220,21 @@ class HojaAiService(private val context: Context? = null) {
         level: DebateLevel,
         transcript: List<DebateTurnMessage>
     ): DebateScoreResult {
-        val apiKey = getEffectiveApiKey()
+        val (apiKey, isCustomKey) = getEffectiveKeyInfo()
         if (apiKey.isNotBlank()) {
+            val rateCheck = rateLimiter?.checkCanRequest(isCustomKey) ?: RateLimitCheckResult.Allowed
+            when (rateCheck) {
+                is RateLimitCheckResult.DailyLimitReached, RateLimitCheckResult.QuotaExhaustedToday -> {
+                    Log.w(TAG, "Daily free-tier quota reached for shared key. Requesting user key.")
+                    onQuotaExceeded?.invoke()
+                    return CuratedDebateEngine.scoreDebate(motion, userSide, level, transcript)
+                }
+                is RateLimitCheckResult.RapidRequestCooldown -> {
+                    delay(rateCheck.waitSeconds * 1000L)
+                }
+                RateLimitCheckResult.Allowed -> Unit
+            }
+
             try {
                 val transcriptFormatted = transcript.joinToString("\n\n") { turn ->
                     val who = if (turn.speaker == TurnSpeaker.USER) "USER (${turn.side.label})" else "OPPONENT (${turn.side.label})"
@@ -180,11 +253,12 @@ class HojaAiService(private val context: Context? = null) {
                         "strengths (array of 2 strings), improvements (array of 2-3 strings), " +
                         "rewrite_it (object with original, improved, reason), coach_message (string)."
 
-                val responseText = callGeminiRest(
+                val responseText = callGeminiRestWithFallback(
                     apiKey = apiKey,
                     prompt = prompt,
                     systemInstruction = systemInstruction,
-                    temperature = 0.35f
+                    temperature = 0.35f,
+                    isCustomKey = isCustomKey
                 )
 
                 val json = JSONObject(responseText)
@@ -213,6 +287,8 @@ class HojaAiService(private val context: Context? = null) {
                         .ifBlank { "Adds an explicit mechanism and sharper clash." }
                 )
 
+                rateLimiter?.recordSuccess(isCustomKey)
+
                 return DebateScoreResult(
                     argumentStrength = argStrength,
                     evidence = evidence,
@@ -234,13 +310,48 @@ class HojaAiService(private val context: Context? = null) {
         return CuratedDebateEngine.scoreDebate(motion, userSide, level, transcript)
     }
 
-    private suspend fun callGeminiRest(
+    private suspend fun callGeminiRestWithFallback(
         apiKey: String,
         prompt: String,
         systemInstruction: String? = null,
-        temperature: Float = 0.7f
+        temperature: Float = 0.7f,
+        isCustomKey: Boolean
+    ): String {
+        return try {
+            callGeminiModel(
+                model = PRIMARY_MODEL,
+                apiKey = apiKey,
+                prompt = prompt,
+                systemInstruction = systemInstruction,
+                temperature = temperature,
+                isCustomKey = isCustomKey
+            )
+        } catch (e: GeminiApiException) {
+            if (e.statusCode == 404) {
+                Log.i(TAG, "Model $PRIMARY_MODEL not found (404); falling back to $FALLBACK_MODEL")
+                callGeminiModel(
+                    model = FALLBACK_MODEL,
+                    apiKey = apiKey,
+                    prompt = prompt,
+                    systemInstruction = systemInstruction,
+                    temperature = temperature,
+                    isCustomKey = isCustomKey
+                )
+            } else {
+                throw e
+            }
+        }
+    }
+
+    private suspend fun callGeminiModel(
+        model: String,
+        apiKey: String,
+        prompt: String,
+        systemInstruction: String? = null,
+        temperature: Float = 0.7f,
+        isCustomKey: Boolean
     ): String = withContext(Dispatchers.IO) {
-        val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$apiKey"
+        val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
         val url = URL(urlStr)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -280,8 +391,16 @@ class HojaAiService(private val context: Context? = null) {
         val responseStream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
         val responseText = responseStream.bufferedReader().use { it.readText() }
 
+        if (responseCode == 429) {
+            rateLimiter?.recordQuotaExhausted(isCustomKey)
+            if (!isCustomKey) {
+                onQuotaExceeded?.invoke()
+            }
+            throw GeminiApiException(429, "Free tier quota / rate limit reached ($responseCode): $responseText")
+        }
+
         if (responseCode !in 200..299) {
-            throw IllegalStateException("Gemini API error ($responseCode): $responseText")
+            throw GeminiApiException(responseCode, "Gemini API error ($responseCode): $responseText")
         }
 
         val respJson = JSONObject(responseText)
@@ -303,6 +422,8 @@ class HojaAiService(private val context: Context? = null) {
         if (this == null) return emptyList()
         return (0 until length()).mapNotNull { optString(it).takeIf { s -> s.isNotBlank() } }
     }
+
+    class GeminiApiException(val statusCode: Int, message: String) : Exception(message)
 
     companion object {
         fun countWords(text: String): Int {

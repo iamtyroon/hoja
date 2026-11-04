@@ -95,7 +95,11 @@ class HojaViewModel(application: Application) : AndroidViewModel(application) {
     private val _debateState = MutableStateFlow(ActiveDebateUiState())
     val debateState: StateFlow<ActiveDebateUiState> = _debateState.asStateFlow()
 
+    private val _showQuotaDialog = MutableStateFlow(false)
+    val showQuotaDialog: StateFlow<Boolean> = _showQuotaDialog.asStateFlow()
+
     init {
+        aiService.onQuotaExceeded = { _showQuotaDialog.value = true }
         viewModelScope.launch {
             repository.recordDailyAppUsage()
         }
@@ -118,6 +122,12 @@ class HojaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveGeminiApiKey(key: String) { repository.setGeminiApiKey(key) }
+
+    fun dismissQuotaDialog() { _showQuotaDialog.value = false }
+
+    fun getDailyUsageInfo(): Pair<Int, Int> = aiService.getDailyUsageInfo()
+
+    fun isSharedQuotaLocked(): Boolean = aiService.isSharedQuotaLocked()
 
     fun setThemeMode(mode: ThemeMode) {
         repository.setThemeMode(mode)
