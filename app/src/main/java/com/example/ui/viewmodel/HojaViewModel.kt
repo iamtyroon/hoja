@@ -68,7 +68,7 @@ class HojaViewModel(application: Application) : AndroidViewModel(application) {
         context = application,
         dao = HojaDatabase.getInstance(application).hojaDao()
     )
-    private val aiService = HojaAiService()
+    private val aiService = HojaAiService(application)
     private val seenMotions = mutableListOf<String>()
 
     val userPrefs: StateFlow<UserProgressPreferences> = repository.userPrefs
@@ -116,6 +116,8 @@ class HojaViewModel(application: Application) : AndroidViewModel(application) {
         )
         loadTodayMotion(forceRefresh = false)
     }
+
+    fun saveGeminiApiKey(key: String) { repository.setGeminiApiKey(key) }
 
     fun setThemeMode(mode: ThemeMode) {
         repository.setThemeMode(mode)

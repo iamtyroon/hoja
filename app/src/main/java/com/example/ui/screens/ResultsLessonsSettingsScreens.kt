@@ -1,4 +1,4 @@
-package com.example.ui.screens
+﻿package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -195,7 +196,7 @@ fun ResultsScreen(
                                     color = palette.onLavenderWash
                                 )
                                 Text(
-                                    text = "${promoted.koriPersonaTitle()} • ${promoted.displayName}",
+                                    text = "${promoted.koriPersonaTitle()} â€¢ ${promoted.displayName}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.onLavenderWash
@@ -278,7 +279,7 @@ fun ResultsScreen(
                             Spacer(modifier = Modifier.height(6.dp))
                             score.improvements.forEach { item ->
                                 Text(
-                                    text = "• $item",
+                                    text = "â€¢ $item",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = palette.onCoralWash,
                                     modifier = Modifier.padding(vertical = 3.dp)
@@ -325,7 +326,7 @@ fun ResultsScreen(
                                         color = palette.inkSecondary
                                     )
                                     Text(
-                                        text = "“${score.rewriteIt.original}”",
+                                        text = "â€œ${score.rewriteIt.original}â€",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontStyle = FontStyle.Italic,
                                         color = palette.inkPrimary
@@ -355,7 +356,7 @@ fun ResultsScreen(
                                         color = palette.sageAccent
                                     )
                                     Text(
-                                        text = "“${score.rewriteIt.improved}”",
+                                        text = "â€œ${score.rewriteIt.improved}â€",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = palette.inkPrimary
@@ -436,7 +437,7 @@ fun ResultsScreen(
 
                             score.strengths.forEach { item ->
                                 Text(
-                                    text = "✓ $item",
+                                    text = "âœ“ $item",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.inkPrimary,
                                     modifier = Modifier.padding(vertical = 2.dp)
@@ -623,7 +624,7 @@ fun HistoryScreen(
                         color = palette.inkPrimary
                     )
                     Text(
-                        text = "${debateHistory.size} saved Room sessions • Tap any debate to review transcript & AI analysis",
+                        text = "${debateHistory.size} saved Room sessions â€¢ Tap any debate to review transcript & AI analysis",
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.inkSecondary
                     )
@@ -648,7 +649,7 @@ fun HistoryScreen(
                 ) {
                     HistoryStatColumn(
                         label = "Active Streak",
-                        value = "${userPrefs.streakDays}d 🔥",
+                        value = "${userPrefs.streakDays}d ðŸ”¥",
                         accent = palette.coralAccent
                     )
                     HistoryStatColumn(
@@ -747,7 +748,7 @@ fun HistoryScreen(
                                     )
                                 }
                                 Text(
-                                    text = "${session.dateKey} • ${parsedTurns.size} turns",
+                                    text = "${session.dateKey} â€¢ ${parsedTurns.size} turns",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.inkSecondary
                                 )
@@ -837,6 +838,7 @@ private fun HistoryStatColumn(
 fun SettingsScreen(
     userPrefs: UserProgressPreferences,
     onSelectThemeMode: (ThemeMode) -> Unit = {},
+    onSaveApiKey: (String) -> Unit = {},
     onResetProgress: () -> Unit,
     onBackToHome: () -> Unit
 ) {
@@ -1042,7 +1044,7 @@ fun SettingsScreen(
                                 )
                                 Column {
                                     Text(
-                                        text = "${rank.koriPersonaTitle()} • ${rank.displayName}",
+                                        text = "${rank.koriPersonaTitle()} â€¢ ${rank.displayName}",
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isCurrent) palette.onSageWash else palette.inkPrimary
@@ -1062,7 +1064,7 @@ fun SettingsScreen(
                                 text = when {
                                     isCurrent -> "Current"
                                     isUnlocked -> "Unlocked"
-                                    else -> "Score ≥${rank.qualifyingScoreThreshold()}"
+                                    else -> "Score â‰¥${rank.qualifyingScoreThreshold()}"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -1074,7 +1076,105 @@ fun SettingsScreen(
             }
         }
 
-        // 3. Reset Progress
+        // 3. AI Sparring & Gemini API Key
+        item {
+            FlankedSectionHeader(title = "AI Sparring Engine")
+        }
+
+        item {
+            var apiKeyInput by remember(userPrefs.geminiApiKey) { mutableStateOf(userPrefs.geminiApiKey) }
+            var isSaved by remember { mutableStateOf(false) }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = palette.cardSurface,
+                border = BorderStroke(1.2.dp, palette.subtleBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (userPrefs.geminiApiKey.isNotBlank()) palette.sageWash else palette.ochreWash,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (userPrefs.geminiApiKey.isNotBlank()) "✨" else "🏯",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                        Column {
+                            Text(
+                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Live Gemini AI Active" else "Storybook Sparring Engine Active",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.inkPrimary
+                            )
+                            Text(
+                                text = if (userPrefs.geminiApiKey.isNotBlank()) "Using your custom Google AI Studio Gemini API key." else "Zero setup required. Using built-in East African sparring motions and Mwalimu Kori adjudication.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.inkSecondary
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = {
+                            apiKeyInput = it
+                            isSaved = false
+                        },
+                        label = { Text("Gemini API Key (Optional)") },
+                        placeholder = { Text("AIzaSy...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (apiKeyInput.isNotBlank()) {
+                            TextButton(
+                                onClick = {
+                                    apiKeyInput = ""
+                                    onSaveApiKey("")
+                                    isSaved = true
+                                }
+                            ) {
+                                Text("Clear Key", color = palette.inkSecondary)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Button(
+                            onClick = {
+                                onSaveApiKey(apiKeyInput.trim())
+                                isSaved = true
+                            },
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.sketchBorder,
+                                contentColor = palette.cardSurface
+                            )
+                        ) {
+                            Text(if (isSaved) "Saved ✓" else "Save Key")
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Reset Progress
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),

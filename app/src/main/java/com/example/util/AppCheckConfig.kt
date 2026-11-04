@@ -19,9 +19,19 @@ private const val RECAPTCHA_SITE_KEY_RES = "recaptcha_site_key"
 
 fun configureAppCheck(context: Context, intent: Intent?) {
     try {
-        // 1. Ensure FirebaseApp is initialized
+        // 1. Ensure FirebaseApp is initialized if google-services.json is present
         if (FirebaseApp.getApps(context).isEmpty()) {
-            FirebaseApp.initializeApp(context)
+            try {
+                FirebaseApp.initializeApp(context)
+            } catch (e: Exception) {
+                Log.w(TAG, "FirebaseApp auto-init skipped (google-services.json not found): ${e.message}")
+            }
+        }
+
+        // If Firebase is not initialized, AppCheck cannot be configured; exit cleanly
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            Log.d(TAG, "No initialized FirebaseApp; skipping AppCheck configuration.")
+            return
         }
 
         if (BuildConfig.DEBUG) {
@@ -62,7 +72,7 @@ fun configureAppCheck(context: Context, intent: Intent?) {
                     Log.e(TAG, "recaptcha_site_key resource string is blank.")
                 }
             } else {
-                Log.e(TAG, "recaptcha_site_key string resource not found in package.")
+                Log.d(TAG, "recaptcha_site_key string resource not found in package.")
             }
         }
     } catch (e: Exception) {

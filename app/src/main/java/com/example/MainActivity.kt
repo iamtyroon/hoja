@@ -204,6 +204,7 @@ fun HojaApp(viewModel: HojaViewModel = viewModel()) {
                                     SettingsScreen(
                                         userPrefs = userPrefs,
                                         onSelectThemeMode = { viewModel.setThemeMode(it) },
+                                        onSaveApiKey = { viewModel.saveGeminiApiKey(it) },
                                         onResetProgress = { viewModel.resetAllProgress() },
                                         onBackToHome = { viewModel.navigateTo(HojaScreen.HOME) }
                                     )

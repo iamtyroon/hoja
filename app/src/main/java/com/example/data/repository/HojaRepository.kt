@@ -35,7 +35,8 @@ data class UserProgressPreferences(
     val bestStreakDays: Int = 1,
     val lastDebateDateKey: String = "",
     val totalDebatesCompleted: Int = 0,
-    val rankProgressWins: Int = 0
+    val rankProgressWins: Int = 0,
+    val geminiApiKey: String = ""
 ) {
     val isStreakActiveToday: Boolean
         get() = lastDebateDateKey == SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
@@ -85,6 +86,7 @@ class HojaRepository(
             0
         }
         val bestStreak = maxOf(prefs.getInt(KEY_BEST_STREAK, 1), activeStreak)
+        val apiKey = prefs.getString(KEY_GEMINI_API_KEY, "") ?: ""
 
         return UserProgressPreferences(
             hasCompletedOnboarding = hasOnboarded,
@@ -94,7 +96,8 @@ class HojaRepository(
             bestStreakDays = bestStreak,
             lastDebateDateKey = lastDate.ifEmpty { today },
             totalDebatesCompleted = prefs.getInt(KEY_TOTAL_DEBATES, 0),
-            rankProgressWins = prefs.getInt(KEY_RANK_WINS, 0)
+            rankProgressWins = prefs.getInt(KEY_RANK_WINS, 0),
+            geminiApiKey = apiKey
         )
     }
 
@@ -132,6 +135,13 @@ class HojaRepository(
 
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+        _userPrefs.value = loadPreferences()
+    }
+
+    fun getGeminiApiKey(): String = prefs.getString(KEY_GEMINI_API_KEY, "") ?: ""
+
+    fun setGeminiApiKey(key: String) {
+        prefs.edit().putString(KEY_GEMINI_API_KEY, key.trim()).apply()
         _userPrefs.value = loadPreferences()
     }
 
@@ -337,6 +347,7 @@ class HojaRepository(
         private const val KEY_LAST_DATE = "last_debate_date_key"
         private const val KEY_TOTAL_DEBATES = "total_debates_completed"
         private const val KEY_RANK_WINS = "rank_progress_wins"
+        private const val KEY_GEMINI_API_KEY = "gemini_api_key"
 
         /**
          * Pure function that calculates the updated consecutive-day streak for app usage.
