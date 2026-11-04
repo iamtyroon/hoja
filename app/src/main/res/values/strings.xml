@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Hoja</string>
+    <string name="mascot_name">Mwalimu Kori</string>
+    <string name="mascot_subtitle">Your Secretary Bird Debate Coach</string>
+    <string name="welcome_title">Sharpen Your Point with Hoja</string>
+    <string name="welcome_subtitle">In Swahili, a hoja is a compelling argument. Choose your debate level to begin training with Mwalimu Kori.</string>
+    <string name="start_training">Begin Debating</string>
+    <string name="daily_motion_header">Today\'s Debate Motion</string>
+    <string name="prepare_debate">Prepare &amp; Pick a Side</string>
+    <string name="check_writing">Check Writing</string>
+    <string name="send_turn">Send Argument</string>
+    <string name="fact_check_reminder">Coach Note: Always verify facts, statistics, and historical examples independently—even AI debaters can make mistakes.</string>
+</resources>

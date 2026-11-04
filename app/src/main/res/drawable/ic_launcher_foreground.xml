@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Painted Enso Circle Medallion -->
+    <path
+        android:fillColor="#FFFDF9"
+        android:pathData="M54,54m-31,0a31,31 0,1 1,62 0a31,31 0,1 1,-62 0" />
+    <path
+        android:strokeColor="#E56B4E"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M26,42 A30,30 0 1,1 26,66" />
+    <!-- 5 Quill Crest Feathers -->
+    <path
+        android:fillColor="#3B2B20"
+        android:pathData="M43,35 C37,24 33,21 31,24 C32,28 37,33 43,37 Z" />
+    <path
+        android:fillColor="#C48232"
+        android:pathData="M48,33 C44,21 41,18 39,21 C40,26 43,31 48,35 Z" />
+    <path
+        android:fillColor="#E56B4E"
+        android:pathData="M54,32 C54,19 52,16 50,19 C50,24 52,30 54,34 Z" />
+    <path
+        android:fillColor="#C48232"
+        android:pathData="M60,33 C64,21 67,18 69,21 C68,26 65,31 60,35 Z" />
+    <path
+        android:fillColor="#3B2B20"
+        android:pathData="M65,35 C71,24 75,21 77,24 C76,28 71,33 65,37 Z" />
+    <!-- Rounded Storybook Head & Torso -->
+    <path
+        android:fillColor="#FFFDF9"
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="2.4"
+        android:pathData="M37,74 C36,56 40,34 54,34 C68,34 72,56 71,74 Z" />
+    <!-- Soft Coral Cheek Blushes -->
+    <path
+        android:fillColor="#FADCD6"
+        android:pathData="M45,48m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <path
+        android:fillColor="#FADCD6"
+        android:pathData="M63,48m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <!-- Eyes -->
+    <path
+        android:fillColor="#3B2B20"
+        android:pathData="M46,47.5m-2.3,0a2.3,2.3 0,1 1,4.6 0a2.3,2.3 0,1 1,-4.6 0" />
+    <path
+        android:fillColor="#3B2B20"
+        android:pathData="M62,47.5m-2.3,0a2.3,2.3 0,1 1,4.6 0a2.3,2.3 0,1 1,-4.6 0" />
+    <!-- Round Scholarly Spectacles -->
+    <path
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="2.0"
+        android:pathData="M46,47.5m-5.8,0a5.8,5.8 0,1 1,11.6 0a5.8,5.8 0,1 1,-11.6 0" />
+    <path
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="2.0"
+        android:pathData="M62,47.5m-5.8,0a5.8,5.8 0,1 1,11.6 0a5.8,5.8 0,1 1,-11.6 0" />
+    <path
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="2.0"
+        android:pathData="M51.8,47.5 L56.2,47.5" />
+    <!-- Golden Beak -->
+    <path
+        android:fillColor="#C48232"
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="1.8"
+        android:pathData="M50.5,51 L57.5,51 L54,57 Z" />
+    <!-- Open Terracotta Debate Book -->
+    <path
+        android:fillColor="#C44B3B"
+        android:strokeColor="#3B2B20"
+        android:strokeWidth="2.2"
+        android:pathData="M36,61 L54,63 L72,61 L71,76 L54,78 L37,76 Z" />
+    <path
+        android:strokeColor="#FFFDF9"
+        android:strokeWidth="2.0"
+        android:pathData="M54,63 L54,78" />
+</vector>

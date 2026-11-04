@@ -1,0 +1,6 @@
+{
+  "name": "Hoja",
+  "description": "A Japanese hand-drawn storybook debate app with an evolving Secretary Bird mascot (Mwalimu Kori), daily streak tracking, Room debate history, and multi-round AI debates & adjudication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
